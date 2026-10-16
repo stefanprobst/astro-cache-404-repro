@@ -1,0 +1,14 @@
+{
+	"name": "astro-cache-404-repro",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "astro build",
+		"start": "node ./dist/server/entry.mjs",
+		"repro": "./repro.sh"
+	},
+	"dependencies": {
+		"@astrojs/node": "11.1.8",
+		"astro": "7.4.0"
+	}
+}

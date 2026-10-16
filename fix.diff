@@ -1,0 +1,45 @@
+--- a/dist/core/cache/memory-provider.js
++++ b/dist/core/cache/memory-provider.js
+@@ -2,6 +2,7 @@
+ import { getCookiesFromResponse } from "../cookies/response.js";
+ import { AstroError } from "../errors/errors.js";
+ import { CacheQueryConfigConflict } from "../errors/errors-data.js";
++import { REROUTABLE_STATUS_CODES } from "../constants.js";
+ /**
+ * Parse CDN-Cache-Control directives from a header value.
+ * Returns maxAge and swr in seconds.
+@@ -171,6 +172,13 @@
+ 	if (response.headers.has("set-cookie")) return true;
+ 	return hasAtLeastOneCookie(getCookiesFromResponse(response));
+ }
++/**
++* The router replaces these responses with the error page, which it cannot do
++* for a cache hit, since the cached body is no longer `null`.
++*/
++function isErrorPageReroute(response) {
++	return response.body === null && REROUTABLE_STATUS_CODES.includes(response.status);
++}
+ function warnSkippedSetCookie(logger, url) {
+ 	logger.warn(`Skipping cache for ${url.pathname}${url.search} because response includes Set-Cookie.`);
+ }
+@@ -323,6 +331,10 @@
+ 							const cdnCC = freshResponse.headers.get("CDN-Cache-Control");
+ 							const { maxAge: newMaxAge, swr: newSwr } = parseCdnCacheControl(cdnCC);
+ 							if (newMaxAge > 0) {
++								if (isErrorPageReroute(freshResponse)) {
++									cache.delete(key);
++									return;
++								}
+ 								if (hasSetCookieHeader(freshResponse)) {
+ 									warnSkippedSetCookie(context.logger, requestUrl);
+ 									return;
+@@ -356,6 +368,9 @@
+ 			const cdnCC = response.headers.get("CDN-Cache-Control");
+ 			const { maxAge, swr } = parseCdnCacheControl(cdnCC);
+ 			if (maxAge > 0) {
++				if (isErrorPageReroute(response)) {
++					return response;
++				}
+ 				if (hasSetCookieHeader(response)) {
+ 					warnSkippedSetCookie(context.logger, requestUrl);
+ 					return response;

@@ -1,0 +1,6 @@
+---
+// E.g. a page for content which does not exist. The page is cacheable, as it would be after reading cached content.
+Astro.cache.set({ maxAge: 60 });
+
+return new Response(null, { status: 404 });
+---
